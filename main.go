@@ -61,7 +61,7 @@ func handleMutate(c *gin.Context) {
 	response.PatchType = &patchType
 	response.UID = admissionReviewReq.UID
 
-	if response.Patch, err = addResourceLimits(pod); err != nil {
+	if response.Patch, err = addLabels(pod); err != nil {
 		response.Allowed = false
 		response.Result = &metav1.Status{
 			Status: "Failed",
@@ -80,6 +80,8 @@ func handleMutate(c *gin.Context) {
 }
 
 func addResourceLimits(pod *corev1.Pod) ([]byte, error) {
+
+	log.Println("calling addResourceLimits")
 
 	var patch []map[string]interface{}
 	for i, container := range pod.Spec.Containers {
@@ -102,6 +104,48 @@ func addResourceLimits(pod *corev1.Pod) ([]byte, error) {
 		}
 	}
 
+	log.Println(patch)
+
 	return json.Marshal(patch)
 
 }
+
+func addLabels(pod *corev1.Pod) ([]byte, error) {
+	var patch []map[string]interface{}
+
+	if pod.Labels["cumulo.ai"] == "" {
+		patch = append(patch, map[string]interface{}{
+			"op":    "add",
+			"path":  "/metadata/labels/cumulo.ai",
+			"value": "true",
+		})
+	} else {
+		patch = append(patch, map[string]interface{}{
+			"op":    "replace",
+			"path":  "/metadata/labels/cumulo.ai",
+			"value": "true",
+		})
+	}
+
+	return json.Marshal(patch)
+}
+
+// The resulting JSON patch would look like this:
+
+// [
+// 	{
+// 		"op": "add",
+// 		"path": "/metadata/labels/cumulo.ai",
+// 		"value": "true"
+// 	}
+// ]
+
+// Or if the label already exists:
+
+// [
+// 	{
+// 		"op": "replace",
+// 		"path": "/metadata/labels/cumulo.ai",
+// 		"value": "true"
+// 	}
+// ]
