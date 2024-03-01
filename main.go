@@ -61,7 +61,7 @@ func handleMutate(c *gin.Context) {
 	response.PatchType = &patchType
 	response.UID = admissionReviewReq.UID
 
-	if response.Patch, err = addLabels(pod); err != nil {
+	if response.Patch, err = GenerateJSONPatch(pod); err != nil {
 		response.Allowed = false
 		response.Result = &metav1.Status{
 			Status: "Failed",
@@ -149,3 +149,42 @@ func addLabels(pod *corev1.Pod) ([]byte, error) {
 // 		"value": "true"
 // 	}
 // ]
+
+/*
+"I need a Go function that generates a JSON patch to add or update a specific label ('cumulo.ai') on a Kubernetes Pod object. The label should be set to 'true' if it doesn't exist and toggled to 'false' if it already exists. The input param should be pointer to Group Version POD object. Create a JSON path as an array of operations and return a byte slice containing the JSON patch. Each operation in the patch should be represented by a struct with fields Op, Path, and Value, serialized as "op", "path", and "value" respectively in the JSON output.  "`
+
+*/
+
+func GenerateJSONPatch(pod *corev1.Pod) ([]byte, error) {
+	// Check if the pod object has labels
+	labels := pod.GetLabels()
+
+	// Create an empty array to store operations
+	operations := make([]Operation, 0)
+
+	// Check if the 'cumulo.ai' label exists
+	if _, ok := labels["cumulo.ai"]; !ok {
+		// Label does not exist, add it with value 'true'
+		operations = append(operations, Operation{Op: "add", Path: "/metadata/labels/cumulo.ai", Value: "true"})
+	} else {
+		// Label exists, toggle its value to 'false'
+		operations = append(operations, Operation{Op: "replace", Path: "/metadata/labels/cumulo.ai", Value: "false"})
+	}
+
+	// Serialize the operations into a JSON byte slice
+	patch, err := json.Marshal(operations)
+	if err != nil {
+		return nil, err
+	}
+
+	log.Println("added label - GenerateJSONPatch")
+
+	return patch, nil
+}
+
+// Operation struct to represent each operation in the JSON patch
+type Operation struct {
+	Op    string `json:"op"`
+	Path  string `json:"path"`
+	Value string `json:"value"`
+}
