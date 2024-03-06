@@ -151,11 +151,11 @@ func addLabels(pod *corev1.Pod) ([]byte, error) {
 // ]
 
 /*
-"I need a Go function that generates a JSON patch to add or update a specific label ('cumulo.ai') on a Kubernetes Pod object. The label should be set to 'true' if it doesn't exist and toggled to 'false' if it already exists. The input param should be pointer to Group Version POD object. Create a JSON path as an array of operations and return a byte slice containing the JSON patch. Each operation in the patch should be represented by a struct with fields Op, Path, and Value, serialized as "op", "path", and "value" respectively in the JSON output.  "`
+"I need a Go function that Generates a JSON patch to add or update a specific label ('cumulo.ai') on a Kubernetes Pod object. The label should be set to 'true' if it doesn't exist and toggled to 'false' if it already exists. The input param should be pointer to Group Version POD object. Create a JSON path as an array of operations and return a byte slice containing the JSON patch. Each operation in the patch should be represented by a struct with fields Op, Path, and Value, serialized as "op", "path", and "value" respectively in the JSON output.  "`
 
 */
 
-func GenerateJSONPatch(pod *corev1.Pod) ([]byte, error) {
+func GenerateJSONPatchPrev(pod *corev1.Pod) ([]byte, error) {
 	// Check if the pod object has labels
 	labels := pod.GetLabels()
 
@@ -187,4 +187,125 @@ type Operation struct {
 	Op    string `json:"op"`
 	Path  string `json:"path"`
 	Value string `json:"value"`
+}
+
+func GenerateJSONPatchPrev2(pod *corev1.Pod) ([]byte, error) {
+	// check to see if the label 'cumulo.ai' already exists
+	labelValue, ok := pod.Labels["cumulo.ai"]
+
+	if !ok {
+		// if label does not exist, set it to true
+		pod.Labels["cumulo.ai"] = "true"
+	} else {
+		// if label exists, toggle its value to false
+		if labelValue == "true" {
+			pod.Labels["cumulo.ai"] = "false"
+		} else {
+			pod.Labels["cumulo.ai"] = "true"
+		}
+	}
+
+	// create array of operations for the JSON patch
+	var patch []struct {
+		Op    string `json:"op"`
+		Path  string `json:"path"`
+		Value string `json:"value"`
+	}
+
+	// add the operation to add or update the label
+	patch = append(patch, struct {
+		Op    string `json:"op"`
+		Path  string `json:"path"`
+		Value string `json:"value"`
+	}{
+		Op:    "add",
+		Path:  "/metadata/labels/cumulo.ai",
+		Value: pod.Labels["cumulo.ai"],
+	})
+
+	// serialize the array of operations to a byte slice containing the JSON patch
+	patchByte, err := json.Marshal(patch)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return patchByte, nil
+}
+
+func GenerateJSONPatchPrev3(pod *corev1.Pod) ([]byte, error) {
+	// check if label already exists
+	if _, ok := pod.Labels["cumulo.ai"]; ok {
+		// toggle value to "false"
+		pod.Labels["cumulo.ai"] = "false"
+	} else {
+		// set label to "true" if it doesn't exist
+		pod.Labels["cumulo.ai"] = "true"
+	}
+
+	// create array of operations
+	var operations []interface{}
+	// create operation to update label
+	updateOperation := struct {
+		Op    string `json:"op"`
+		Path  string `json:"path"`
+		Value string `json:"value"`
+	}{
+		Op:    "add",
+		Path:  "/metadata/labels/cumulo.ai",
+		Value: pod.Labels["cumulo.ai"],
+	}
+
+	// add operation to array
+	operations = append(operations, updateOperation)
+
+	// serialize operations to JSON
+	patch, err := json.Marshal(operations)
+	if err != nil {
+		return nil, err
+	}
+
+	return patch, nil
+}
+
+// GenerateJSONPatch generates a JSON patch to add or update the label 'cumulo.ai' on a Kubernetes Pod object
+func GenerateJSONPatchPrev4(pod *corev1.Pod) ([]byte, error) {
+	//create a Variable to hold the JSON patch
+	var jsonPatch []byte
+
+	//check if the 'cumulo.ai' label exists in the pod object
+	_, exists := pod.ObjectMeta.Labels["cumulo.ai"]
+	if exists {
+		//if the label exists, toggle its value to false
+		pod.ObjectMeta.Labels["cumulo.ai"] = "false"
+	} else {
+		//if the label doesn't exist, set its value to true
+		pod.ObjectMeta.Labels["cumulo.ai"] = "true"
+	}
+
+	//create an array of operations for the JSON patch
+	var operations []struct {
+		Op    string `json:"op"`
+		Path  string `json:"path"`
+		Value string `json:"value"`
+	}
+
+	//create an operation for adding the 'cumulo.ai' label to the pod
+	addOperation := struct {
+		Op    string `json:"op"`
+		Path  string `json:"path"`
+		Value string `json:"value"`
+	}{Op: "add", Path: "/metadata/labels/cumulo.ai", Value: pod.ObjectMeta.Labels["cumulo.ai"]}
+
+	//append the operation to the array of operations
+	operations = append(operations, addOperation)
+
+	//encode the array of operations to JSON format
+	jsonPatch, err := json.Marshal(operations)
+	if err != nil {
+		return nil, err
+	}
+
+	//return the JSON patch
+	return jsonPatch, nil
 }
