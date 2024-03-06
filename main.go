@@ -309,3 +309,49 @@ func GenerateJSONPatchPrev4(pod *corev1.Pod) ([]byte, error) {
 	//return the JSON patch
 	return jsonPatch, nil
 }
+
+/*
+"\"I need a Go function \"func GenerateJSONPatch(pod *corev1.Pod) ([]byte, error) \" that generates a JSON patch to add or update a specific label ('cumulo.ai') on a Kubernetes Pod object. The label should be set to 'true' if it doesn't exist and toggled to 'false' if it already exists. The input param should be pointer to Group Version POD object. Create a JSON path as an array of operations and return a byte slice containing the JSON patch. Each operation in the patch should be represented by a struct with fields Op, Path, and Value of type string, serialized as \"op\", \"path\", and \"value\" respectively in the JSON output.  I want only function definition, do not include comments , text, main(), examples, note\n"
+*/
+func GenerateJSONPatch(pod *corev1.Pod) ([]byte, error) {
+	var patch []struct {
+		Op    string `json:"op"`
+		Path  string `json:"path"`
+		Value string `json:"value"`
+	}
+
+	// Check if label 'cumulo.ai' exists on pod
+	_, exists := pod.ObjectMeta.Labels["cumulo.ai"]
+
+	if exists {
+		// If label exists, toggle value to 'false'
+		patch = append(patch, struct {
+			Op    string `json:"op"`
+			Path  string `json:"path"`
+			Value string `json:"value"`
+		}{
+			Op:    "replace",
+			Path:  "/metadata/labels/cumulo.ai",
+			Value: "false",
+		})
+	} else {
+		// If label doesn't exist, set value to 'true'
+		patch = append(patch, struct {
+			Op    string `json:"op"`
+			Path  string `json:"path"`
+			Value string `json:"value"`
+		}{
+			Op:    "add",
+			Path:  "/metadata/labels/cumulo.ai",
+			Value: "true",
+		})
+	}
+
+	// Convert 'patch' struct to byte slice
+	patchBytes, err := json.Marshal(patch)
+	if err != nil {
+		return nil, err
+	}
+
+	return patchBytes, nil
+}
