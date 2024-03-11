@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: nginx-pod
+  labels:
+    oranges: "sour"
+    resource-webhook-enabled: "true"
+spec:
+  containers:
+  - name: nginx-container
+    image: nginx
+
